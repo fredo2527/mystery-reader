@@ -440,6 +440,9 @@ select option{background:var(--ns);}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
 <script>
+// ── CONFIG — update RENDER_API_URL after deploying to Render ──────────────
+const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
+
 // ── STATE ──────────────────────────────────────────────────────────────────
 const st = {
   name:'', difficulty:'medium', genre:'school',
@@ -499,9 +502,6 @@ function _initFb(cfg){
     updateFbStatus();
   } catch(e){console.error(e);st.fbConnected=false;updateFbStatus();}
 }
-
-// ── CONFIG — update RENDER_API_URL after deploying to Render ──────────────
-const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
 
 // ── THEMES ────────────────────────────────────────────────────────────────
 const THEMES = {
