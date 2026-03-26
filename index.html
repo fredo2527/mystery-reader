@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystery Reader — The Detective's Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Special+Elite&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --nb:#1a1612;--ns:#231f1a;--nc:#2c2620;--ng:#c9a84c;--ngd:#8a6e2f;
+  --ncr:#f0e8d0;--ncd:#b8a882;--nr:#a83232;--nrb:#d44;
+  --nbo:rgba(201,168,76,0.25);--nm:#7a6e5e;
+}
+/* ── THEMES ─────────────────────────────────────────────────────────────── */
+[data-theme="midnight"]{
+  --nb:#0d0d1a;--ns:#131326;--nc:#1a1a33;--ng:#7b8fff;--ngd:#4a5acc;
+  --ncr:#dde2ff;--ncd:#9aa0cc;--nrb:#ff6b6b;
+  --nbo:rgba(123,143,255,0.25);--nm:#5a607a;
+}
+[data-theme="forest"]{
+  --nb:#0f1a0f;--ns:#142014;--nc:#1a2d1a;--ng:#6abf69;--ngd:#3d8c3c;
+  --ncr:#d4f0d4;--ncd:#8ab88a;--nrb:#e05c5c;
+  --nbo:rgba(106,191,105,0.25);--nm:#4a6e4a;
+}
+[data-theme="crimson"]{
+  --nb:#1a0a0a;--ns:#240f0f;--nc:#2e1414;--ng:#e05c5c;--ngd:#a33030;
+  --ncr:#fde8e8;--ncd:#c49090;--nrb:#ff9900;
+  --nbo:rgba(224,92,92,0.25);--nm:#7a4a4a;
+}
+[data-theme="slate"]{
+  --nb:#f4f1eb;--ns:#e8e4dc;--nc:#ddd8ce;--ng:#5a4e3a;--ngd:#3a3020;
+  --ncr:#2a2218;--ncd:#5a5040;--nrb:#c0392b;
+  --nbo:rgba(90,78,58,0.25);--nm:#8a7a60;
+}
+[data-theme="dusk"]{
+  --nb:#1e1a2e;--ns:#252038;--nc:#2e2840;--ng:#c4a3d4;--ngd:#8a6aaa;
+  --ncr:#ede0f5;--ncd:#b09ac0;--nrb:#e07090;
+  --nbo:rgba(196,163,212,0.22);--nm:#7a6a90;
+}
+[data-theme="ocean"]{
+  --nb:#0e1a24;--ns:#132230;--nc:#182c3a;--ng:#6bbccc;--ngd:#3a8a9a;
+  --ncr:#daf2f8;--ncd:#8abfcc;--nrb:#e08060;
+  --nbo:rgba(107,188,204,0.22);--nm:#4a7a8a;
+}
+[data-theme="sand"]{
+  --nb:#f7f2ea;--ns:#ede7db;--nc:#e4dcce;--ng:#8a7060;--ngd:#604a38;
+  --ncr:#2e2418;--ncd:#6a5848;--nrb:#b04030;
+  --nbo:rgba(138,112,96,0.22);--nm:#9a8878;
+}
+/* theme switcher UI */
+.theme-bar{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
+.theme-label{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:2px;color:var(--nm);text-transform:uppercase;}
+.theme-swatches{display:flex;gap:6px;}
+.tswatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;}
+.tswatch:hover{transform:scale(1.15);}
+.tswatch.active{border-color:var(--ng);transform:scale(1.15);}
+.tswatch-noir{background:radial-gradient(circle at 40% 40%,#3a3020,#1a1612);}
+.tswatch-midnight{background:radial-gradient(circle at 40% 40%,#2a2d5a,#0d0d1a);}
+.tswatch-forest{background:radial-gradient(circle at 40% 40%,#2d5a2d,#0f1a0f);}
+.tswatch-crimson{background:radial-gradient(circle at 40% 40%,#5a1a1a,#1a0a0a);}
+.tswatch-slate{background:radial-gradient(circle at 40% 40%,#c8c0b0,#f4f1eb);}
+.tswatch-dusk{background:radial-gradient(circle at 40% 40%,#5a4878,#1e1a2e);}
+.tswatch-ocean{background:radial-gradient(circle at 40% 40%,#1e6a80,#0e1a24);}
+.tswatch-sand{background:radial-gradient(circle at 40% 40%,#c8b89a,#f7f2ea);}
+html,body{min-height:100%;background:var(--nb);color:var(--ncr);}
+body{font-family:'Libre Baskerville',serif;padding:0;margin:0;}
+
+#app{max-width:640px;margin:0 auto;min-height:100vh;padding:20px;position:relative;}
+
+.grain{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.4;}
+
+.screen{position:relative;z-index:1;display:none;animation:fadeIn .3s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.masthead{text-align:center;border-bottom:1px solid var(--nbo);padding-bottom:14px;margin-bottom:20px;}
+.mt{font-family:'Special Elite',monospace;font-size:11px;letter-spacing:4px;color:var(--ng);text-transform:uppercase;margin-bottom:4px;}
+.mn{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ncr);line-height:1.1;}
+.ms{font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:2px;margin-top:4px;}
+
+.btn{font-family:'Special Elite',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  padding:10px 22px;border:1px solid var(--ng);background:transparent;color:var(--ng);
+  cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.btn:hover,.btn:focus{background:var(--ng);color:var(--nb);outline:none;}
+.btn-p{background:var(--ng);color:var(--nb);}
+.btn-p:hover{background:#e8c460;}
+.btn-sm{font-size:10px;padding:7px 16px;}
+.btn-d{border-color:var(--nrb);color:var(--nrb);}
+.btn-d:hover{background:var(--nrb);color:white;}
+.btn-w{width:100%;display:block;text-align:center;margin-bottom:8px;}
+
+.card{background:var(--nc);border:1px solid var(--nbo);padding:18px;margin-bottom:14px;border-radius:2px;}
+.lbl{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ng);margin-bottom:6px;}
+
+input,select,textarea{
+  width:100%;background:var(--ns);border:1px solid var(--nbo);color:var(--ncr);
+  padding:10px 12px;font-family:'Libre Baskerville',serif;font-size:14px;margin-bottom:12px;
+  border-radius:2px;-webkit-appearance:none;appearance:none;}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--ng);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+select option{background:var(--ns);}
+
+.tbar-w{height:4px;background:var(--ns);margin-bottom:18px;border:1px solid var(--nbo);}
+.tbar{height:100%;background:var(--ng);transition:width 1s linear;}
+
+.story-text{font-size:15px;line-height:2;color:var(--ncd);}
+.story-scroll{max-height:55vh;overflow-y:auto;padding-right:8px;}
+.story-scroll::-webkit-scrollbar{width:4px;}
+.story-scroll::-webkit-scrollbar-track{background:var(--ns);}
+.story-scroll::-webkit-scrollbar-thumb{background:var(--ngd);}
+
+.clue{background:rgba(201,168,76,.15);border-bottom:1px solid var(--ng);cursor:pointer;position:relative;}
+.clue-tip{display:none;position:absolute;bottom:100%;left:0;background:var(--nc);
+  border:1px solid var(--ng);padding:6px 10px;font-size:11px;color:var(--ng);
+  white-space:nowrap;z-index:10;font-family:'Special Elite',monospace;letter-spacing:1px;
+  max-width:220px;white-space:normal;}
+.clue:hover .clue-tip,.clue.tapped .clue-tip{display:block;}
+
+.q-item{margin-bottom:16px;}
+.q-text{font-size:14px;margin-bottom:10px;line-height:1.7;}
+.q-opt{display:block;width:100%;text-align:left;background:var(--ns);border:1px solid var(--nbo);
+  color:var(--ncd);padding:10px 14px;margin-bottom:6px;cursor:pointer;
+  font-family:'Libre Baskerville',serif;font-size:13px;transition:all .15s;border-radius:2px;
+  -webkit-tap-highlight-color:transparent;}
+.q-opt:hover{border-color:var(--ng);color:var(--ncr);}
+.q-opt.correct{border-color:#4a9;background:rgba(68,170,119,.15);color:#7dcea0;}
+.q-opt.wrong{border-color:var(--nrb);background:rgba(170,68,68,.15);color:#e07070;}
+.q-opt:disabled{cursor:default;}
+
+.score-ring{width:100px;height:100px;border-radius:50%;border:3px solid var(--ng);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 18px;}
+.snum{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--ng);}
+.sden{font-family:'Special Elite',monospace;font-size:11px;color:var(--nm);}
+
+.badge{display:inline-block;font-family:'Special Elite',monospace;font-size:10px;
+  letter-spacing:1px;padding:3px 10px;border:1px solid;margin:2px;}
+.bg{border-color:var(--ng);color:var(--ng);}
+.br{border-color:var(--nrb);color:var(--nrb);}
+
+.trow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--nbo);font-size:13px;}
+.trow:last-child{border-bottom:none;}
+
+.tabs{display:flex;gap:0;margin-bottom:18px;}
+.tab{flex:1;padding:8px;text-align:center;font-family:'Special Elite',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:1px solid var(--nbo);
+  color:var(--nm);transition:all .15s;}
+.tab.active{background:var(--ng);color:var(--nb);border-color:var(--ng);}
+
+.spinner{width:32px;height:32px;border:2px solid var(--nbo);border-top-color:var(--ng);
+  border-radius:50%;animation:spin .8s linear infinite;margin:48px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.lmsg{text-align:center;font-family:'Special Elite',monospace;font-size:11px;letter-spacing:2px;color:var(--ng);margin-top:10px;}
+
+.pdots{display:flex;gap:5px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ns);border:1px solid var(--nbo);}
+.dot.done{background:var(--ng);border-color:var(--ng);}
+.dot.current{background:transparent;border-color:var(--ng);box-shadow:0 0 4px var(--ng);}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--nc);border:1px solid var(--nbo);padding:14px;text-align:center;}
+.stat-n{font-family:'Playfair Display',serif;font-size:26px;color:var(--ng);}
+.stat-l{font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-top:2px;}
+.prog-bar-w{height:6px;background:var(--ns);border:1px solid var(--nbo);margin-top:6px;}
+.prog-bar{height:100%;background:var(--ng);}
+
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+.sok{background:#4a9;}.serr{background:var(--nrb);}.spend{background:var(--ng);}
+
+.fb-box{background:rgba(201,168,76,.07);border:1px solid var(--nbo);padding:16px;margin-bottom:14px;}
+.tip{background:rgba(201,168,76,.08);border-left:2px solid var(--ng);padding:8px 12px;
+  margin-top:10px;font-size:12px;color:var(--ncd);line-height:1.7;}
+
+.btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+
+/* Mobile adjustments */
+@media(max-width:768px){
+  #app{padding:14px;}
+  .mn{font-size:24px;}
+  .mt{font-size:13px;letter-spacing:3px;}
+  .ms{font-size:12px;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .story-scroll{max-height:52vh;}
+  .story-text{font-size:17px;line-height:2.1;}
+  .q-text{font-size:16px;line-height:1.8;}
+  .q-opt{font-size:15px;padding:12px 14px;}
+  input,select,textarea{font-size:16px;}
+  .lbl{font-size:12px;letter-spacing:1.5px;}
+  .btn{font-size:12px;padding:11px 20px;}
+  .btn-sm{font-size:11px;padding:9px 16px;}
+  .tab{font-size:11px;padding:10px 6px;}
+  .trow{font-size:14px;}
+  .card{padding:16px;}
+  .snum{font-size:36px;}
+  .stat-n{font-size:28px;}
+  .score-ring{width:110px;height:110px;}
+  #verdict-text{font-size:16px !important;}
+  #score-comment{font-size:14px !important;}
+  .solution-text,#solution-text{font-size:15px !important;line-height:1.9;}
+  #review-list .trow span:last-child{font-size:13px;}
+  .tip{font-size:13px;}
+}
+@media(max-width:480px){
+  .mn{font-size:22px;}
+  .story-text{font-size:16px;}
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div id="app">
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="masthead">
+    <div class="mt">The Detective's Desk</div>
+    <div class="mn">Mystery Reader</div>
+    <div class="ms">Literacy + Deduction — Grades 7 &amp; 8</div>
+  </div>
+  <div id="fb-status" style="text-align:center;margin-bottom:12px;font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;min-height:18px;"></div>
+  <div class="theme-bar">
+    <span class="theme-label">Theme</span>
+    <div class="theme-swatches">
+      <div class="tswatch tswatch-noir active" title="Noir (default)" onclick="setTheme('noir',this)"></div>
+      <div class="tswatch tswatch-midnight" title="Midnight Blue" onclick="setTheme('midnight',this)"></div>
+      <div class="tswatch tswatch-forest" title="Forest Green" onclick="setTheme('forest',this)"></div>
+      <div class="tswatch tswatch-crimson" title="Crimson" onclick="setTheme('crimson',this)"></div>
+      <div class="tswatch tswatch-slate" title="Parchment" onclick="setTheme('slate',this)"></div>
+      <div class="tswatch tswatch-dusk" title="Dusk" onclick="setTheme('dusk',this)"></div>
+      <div class="tswatch tswatch-ocean" title="Ocean" onclick="setTheme('ocean',this)"></div>
+      <div class="tswatch tswatch-sand" title="Sand" onclick="setTheme('sand',this)"></div>
+    </div>
+    <span class="theme-label" id="theme-name">Noir</span>
+  </div>
+  <div class="card" style="padding:24px;">
+    <div style="display:flex;gap:16px;justify-content:center;margin-bottom:18px;">
+      <div style="text-align:center;"><div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--ng);">20</div><div style="font-family:'Special Elite',monospace;font-size:9px;color:var(--nm);letter-spacing:2px;">MIN READ</div></div>
+      <div style="color:var(--nbo);font-size:20px;align-self:center;">|</div>
+      <div style="text-align:center;"><div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--ng);">10</div><div style="font-family:'Special Elite',monospace;font-size:9px;color:var(--nm);letter-spacing:2px;">QUESTIONS</div></div>
+
+    </div>
+    <div class="lbl">Detective name</div>
+    <input type="text" id="student-name" placeholder="Enter your name..." autocomplete="off"/>
+    <div class="lbl">Case difficulty</div>
+    <select id="difficulty">
+      <option value="easy">Rookie — straightforward clues</option>
+      <option value="medium" selected>Detective — moderate challenge</option>
+      <option value="hard">Inspector — complex vocabulary</option>
+    </select>
+    <div class="lbl">Case type</div>
+    <select id="genre">
+      <option value="school">School mystery</option>
+      <option value="neighborhood">Neighborhood caper</option>
+      <option value="historical">Historical whodunit</option>
+      <option value="science">Science lab puzzle</option>
+      <option value="sports">Sports mystery</option>
+      <option value="adventure">Outdoor adventure</option>
+    </select>
+    <div style="text-align:center;margin-top:6px;">
+      <button class="btn btn-p" onclick="startCase()">Open the Case File</button>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-sm" onclick="showTeacher()">Teacher Dashboard</button>
+  </div>
+</div>
+
+<!-- FIREBASE SETUP -->
+<div class="screen" id="s-setup">
+  <div class="masthead">
+    <div class="mt">Configuration</div>
+    <div class="mn">Firebase Setup</div>
+    <div class="ms">Cross-device sync</div>
+  </div>
+  <div class="fb-box">
+    <div class="lbl" style="margin-bottom:8px;">Quick steps</div>
+    <div style="font-size:12px;color:var(--ncd);line-height:1.9;">
+      1. Go to <span style="color:var(--ng);">firebase.google.com</span> → sign in<br>
+      2. Add project → Build → Realtime Database → Create (test mode)<br>
+      3. Project Settings ⚙ → Your apps → &lt;/&gt; Web → Register<br>
+      4. Copy the <span style="color:var(--ng);">firebaseConfig { }</span> object → paste below
+    </div>
+  </div>
+  <div class="lbl">Paste your firebaseConfig object</div>
+  <textarea id="fb-input" rows="10" placeholder='{&#10;  "apiKey": "AIza...",&#10;  "authDomain": "your-app.firebaseapp.com",&#10;  "databaseURL": "https://your-app-default-rtdb.firebaseio.com",&#10;  "projectId": "your-app",&#10;  "storageBucket": "your-app.appspot.com",&#10;  "messagingSenderId": "123456",&#10;  "appId": "1:123..."&#10;}' style="font-family:monospace;font-size:12px;min-height:180px;"></textarea>
+  <button class="btn btn-p btn-w" onclick="saveFirebaseConfig()">Connect to Firebase</button>
+  <div id="fb-result" style="text-align:center;font-family:'Special Elite',monospace;font-size:11px;letter-spacing:1px;min-height:22px;margin-bottom:12px;"></div>
+  <div class="tip">Make sure <span style="color:var(--ng);">databaseURL</span> is present — it ends in <span style="color:var(--ng);">firebaseio.com</span>. Keys must be in double quotes.</div>
+  <div class="btn-row"><button class="btn btn-sm" onclick="show('s-home')">Back to Home</button></div>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="s-loading">
+  <div class="masthead"><div class="mt">The Detective's Desk</div><div class="mn">Case File Incoming</div></div>
+  <div class="spinner"></div>
+  <div class="lmsg" id="lmsg">Composing the mystery...</div>
+  <div style="text-align:center;margin-top:24px;color:var(--nm);font-size:12px;font-family:'Special Elite',monospace;letter-spacing:1px;">Every detail matters. Read carefully.</div>
+</div>
+
+<!-- READING -->
+<div class="screen" id="s-reading">
+  <div class="masthead">
+    <div class="mt" id="reading-label">Case File</div>
+    <div class="mn" id="story-title">The Mystery</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:2px;">TIME REMAINING</div>
+    <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--ng);" id="timer-display">20:00</div>
+  </div>
+  <div class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
+  <div class="card">
+    <div style="font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-bottom:10px;">
+      Context clues are <span style="background:rgba(201,168,76,.2);border-bottom:1px solid var(--ng);padding:0 3px;">highlighted</span> — tap to reveal meaning
+    </div>
+    <div class="story-scroll"><div class="story-text" id="story-body"></div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-sm">Clues: <span id="clue-count">0</span></button>
+    <button class="btn btn-sm btn-p" onclick="goToQuiz()">Ready to Solve ›</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="s-quiz">
+  <div class="masthead"><div class="mt">Interrogation Room</div><div class="mn">Answer the Questions</div></div>
+  <div class="pdots" id="pdots"></div>
+  <div id="quiz-area"></div>
+  <div class="btn-row">
+    <button class="btn btn-sm" id="prev-btn" onclick="prevQ()" style="display:none">‹ Prev</button>
+    <button class="btn btn-sm btn-p" id="next-btn" onclick="nextQ()">Next ›</button>
+    <button class="btn btn-sm btn-p" id="sub-btn" onclick="submitQuiz()" style="display:none">Submit Case ›</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="s-results">
+  <div class="masthead"><div class="mt">Case Closed</div><div class="mn" id="result-title">The Verdict</div></div>
+  <div style="text-align:center;margin-bottom:18px;">
+    <div class="score-ring"><div class="snum" id="score-num">8</div><div class="sden" id="score-den">out of 10</div></div>
+    <div style="font-family:'Special Elite',monospace;font-size:14px;color:var(--ng);margin-bottom:6px;" id="verdict-text">Sharp Detective</div>
+    <div style="font-size:12px;color:var(--nm);margin-bottom:8px;" id="score-comment"></div>
+    <div id="sync-status" style="font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;min-height:18px;"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">The Solution</div>
+    <div id="solution-text" style="font-size:13px;line-height:1.8;color:var(--ncd);"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">Context Clue Review</div>
+    <div id="review-list"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-sm" onclick="show('s-home')">New Case</button>
+    <button class="btn btn-sm btn-p" onclick="saveResult()">Save Result</button>
+  </div>
+</div>
+
+<!-- TEACHER DASHBOARD -->
+<!-- PASSCODE SCREEN -->
+<div class="screen" id="s-passcode">
+  <div class="masthead">
+    <div class="mt">Restricted Access</div>
+    <div class="mn">Teacher Login</div>
+    <div class="ms">Faculty only — students do not have access</div>
+  </div>
+  <div class="card" style="max-width:320px;margin:0 auto 16px;">
+    <div class="lbl">Enter passcode</div>
+    <input type="password" id="passcode-input" placeholder="Enter passcode..." autocomplete="off"
+      onkeydown="if(event.key==='Enter')checkPasscode()" style="letter-spacing:4px;font-size:18px;text-align:center;"/>
+    <div id="passcode-error" style="color:var(--nrb);font-family:Special Elite,monospace;font-size:11px;letter-spacing:1px;text-align:center;min-height:18px;margin-bottom:8px;"></div>
+    <button class="btn btn-p btn-w" onclick="checkPasscode()">Enter Dashboard</button>
+  </div>
+  <div class="btn-row"><button class="btn btn-sm" onclick="show('s-home')">Back</button></div>
+</div>
+
+<!-- ADMIN CONFIRM SCREEN -->
+<div class="screen" id="s-admincode">
+  <div class="masthead">
+    <div class="mt">Admin Confirmation</div>
+    <div class="mn">Clear All Results?</div>
+    <div class="ms">This action cannot be undone</div>
+  </div>
+  <div class="card" style="max-width:320px;margin:0 auto 16px;">
+    <div style="font-size:13px;color:var(--ncd);line-height:1.8;margin-bottom:14px;text-align:center;">
+      Enter the admin passcode to permanently delete all student results from Firebase and local storage.
+    </div>
+    <div class="lbl">Admin passcode</div>
+    <input type="password" id="admin-input" placeholder="Admin passcode..." autocomplete="off"
+      onkeydown="if(event.key==='Enter')checkAdminCode()" style="letter-spacing:4px;font-size:18px;text-align:center;"/>
+    <div id="admin-error" style="color:var(--nrb);font-family:Special Elite,monospace;font-size:11px;letter-spacing:1px;text-align:center;min-height:18px;margin-bottom:8px;"></div>
+    <button class="btn btn-d btn-w" onclick="checkAdminCode()">Confirm — Delete All</button>
+  </div>
+  <div class="btn-row"><button class="btn btn-sm" onclick="show('s-teacher')">Cancel</button></div>
+</div>
+
+<div class="screen" id="s-teacher">
+  <div class="masthead">
+    <div class="mt">Faculty Access</div>
+    <div class="mn">Teacher Dashboard</div>
+    <div class="ms" id="fb-sync-ind"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="teacherTab('results')">Results</div>
+    <div class="tab" onclick="teacherTab('analytics')">Analytics</div>
+    <div class="tab" onclick="teacherTab('progress')">Progress</div>
+  </div>
+  <div id="t-results">
+    <div id="teacher-list"><div style="text-align:center;color:var(--nm);padding:36px 0;font-family:'Special Elite',monospace;font-size:12px;letter-spacing:1px;">Loading...</div></div>
+  </div>
+  <div id="t-analytics" style="display:none;">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-n" id="avg-score">—</div><div class="stat-l">Avg Score</div></div>
+      <div class="stat-card"><div class="stat-n" id="total-cases">0</div><div class="stat-l">Cases Solved</div></div>
+      <div class="stat-card"><div class="stat-n" id="top-student">—</div><div class="stat-l">Top Detective</div></div>
+      <div class="stat-card"><div class="stat-n" id="avg-clues">—</div><div class="stat-l">Avg Clues Found</div></div>
+      <div class="stat-card"><div class="stat-n" id="avg-time">—</div><div class="stat-l">Avg Time Read</div></div>
+      <div class="stat-card"><div class="stat-n" id="popular-genre">—</div><div class="stat-l">Top Case Type</div></div>
+    </div>
+    <div class="card"><div class="lbl">Score Distribution</div><div id="score-dist"></div></div>
+    <div class="card"><div class="lbl">Difficulty Breakdown</div><div id="diff-breakdown"></div></div>
+    <div class="card"><div class="lbl">Case Type Breakdown</div><div id="genre-breakdown"></div></div>
+    <div class="card"><div class="lbl">Time Read per Student</div><div id="time-breakdown"></div></div>
+  </div>
+  <div id="t-progress" style="display:none;">
+    <div class="card"><div class="lbl">Student Progress</div><div id="student-progress"></div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-sm btn-d" onclick="promptAdminCode()">Clear All</button>
+    <button class="btn btn-sm" onclick="loadTeacherData()">Refresh</button>
+    <button class="btn btn-sm" onclick="show('s-home')">Back</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const st = {
+  name:'', difficulty:'medium', genre:'school',
+  story:'', title:'', questions:[], answers:{},
+  currentQ:0, timerInt:null, timeLeft:1200,
+  cluesHovered:new Set(), solution:'',
+  lastResult:null, db:null, fbConnected:false, allResults:[]
+};
+
+const LMSGS=['Composing the mystery...','Planting the clues...','Setting the scene...','The suspect is lurking...','Cross-referencing the evidence...','Building the case file...','Interviewing witnesses...','This one is detailed — hang tight...'];
+const DIFF={
+  easy:'Use language slightly above a comfortable 7th grade reading level. Include a handful of unfamiliar words that students can work out from context. Sentence structure should be mostly straightforward with occasional longer sentences. The mystery plot should have a clear sequence of events with 1-2 mild twists.',
+  medium:'Use vocabulary at a solid 8th grade challenge level — include words students may not know but can infer from surrounding sentences. Mix short punchy sentences with longer complex ones. The mystery should have 2-3 plot layers, a convincing red herring, and require careful reading to identify the culprit.',
+  hard:'Use advanced vocabulary throughout — multi-syllable words, literary devices, and figurative language that challenge strong readers. Sentence structures should be varied and complex. The mystery should have 3+ plot layers, multiple red herrings, and subtle clues that require inference and close reading to piece together.'
+};
+const GENRE={school:'set in a middle school — something gone missing or a strange event occurred',neighborhood:'set in a neighborhood — a local mystery involving houses, parks, or community members',historical:'set in the early 1900s — a historical whodunit with period-appropriate details',science:'set in a school science lab — a mysterious experiment or missing equipment',sports:'set around a sports team or athletic competition — involving sabotage, a missing trophy, or an unfair advantage',adventure:'set in an outdoor wilderness or summer camp setting — involving a strange discovery, missing person, or natural mystery'};
+
+// ── SCREEN ─────────────────────────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── FIREBASE ───────────────────────────────────────────────────────────────
+function updateFbStatus(){
+  const el=document.getElementById('fb-status');
+  const ind=document.getElementById('fb-sync-ind');
+  if(st.fbConnected){
+    el.innerHTML='<span class="sync-dot sok"></span><span style="color:#4a9">Firebase connected — syncing across all devices</span>';
+    if(ind) ind.innerHTML='<span class="sync-dot sok"></span>Live sync active';
+  } else {
+    el.innerHTML='<span class="sync-dot serr"></span><span style="color:var(--nm)">Not connected — <span style="color:var(--ng);cursor:pointer;text-decoration:underline;" onclick="show(\'s-setup\')">set up Firebase</span> for cross-device sync</span>';
+    if(ind) ind.innerHTML='<span class="sync-dot serr"></span>Local only';
+  }
+}
+
+function saveFirebaseConfig(){
+  const raw=document.getElementById('fb-input').value.trim();
+  const res=document.getElementById('fb-result');
+  try{
+    const cfg=JSON.parse(raw);
+    if(!cfg.databaseURL){res.innerHTML='<span style="color:var(--nrb)">Missing databaseURL — check your config</span>';return;}
+    localStorage.setItem('fb_config',raw);
+    _initFb(cfg);
+    res.innerHTML='<span style="color:#4a9">✓ Connected! Results will sync across all devices.</span>';
+    setTimeout(()=>show('s-home'),1600);
+  } catch(e){res.innerHTML='<span style="color:var(--nrb)">Invalid JSON — make sure keys are in double quotes and no trailing semicolon</span>';}
+}
+
+function _initFb(cfg){
+  try{
+    const existing=firebase.apps.find(a=>a.name==='[DEFAULT]');
+    const app=existing||firebase.initializeApp(cfg);
+    st.db=firebase.database(app);
+    st.fbConnected=true;
+    updateFbStatus();
+  } catch(e){console.error(e);st.fbConnected=false;updateFbStatus();}
+}
+
+// ── CONFIG — update RENDER_API_URL after deploying to Render ──────────────
+const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
+
+// ── THEMES ────────────────────────────────────────────────────────────────
+const THEMES = {
+  noir:    {label:'Noir',     attr:''},
+  midnight:{label:'Midnight', attr:'midnight'},
+  forest:  {label:'Forest',   attr:'forest'},
+  crimson: {label:'Crimson',  attr:'crimson'},
+  slate:   {label:'Parchment',attr:'slate'},
+  dusk:    {label:'Dusk',      attr:'dusk'},
+  ocean:   {label:'Ocean',     attr:'ocean'},
+  sand:    {label:'Sand',      attr:'sand'}
+};
+
+function setTheme(name, swatchEl){
+  const t = THEMES[name];
+  if(!t) return;
+  document.documentElement.setAttribute('data-theme', t.attr);
+  document.querySelectorAll('.tswatch').forEach(s=>s.classList.remove('active'));
+  if(swatchEl) swatchEl.classList.add('active');
+  const lbl = document.getElementById('theme-name');
+  if(lbl) lbl.textContent = t.label;
+  localStorage.setItem('mystery_theme', name);
+}
+
+(function(){
+  const saved = localStorage.getItem('mystery_theme') || 'noir';
+  const swatch = document.querySelector('.tswatch-'+saved);
+  setTheme(saved, swatch);
+})();
+
+// ── BAKED-IN CONFIG — auto-connects on every device, no setup needed ────────
+const BAKED_CONFIG = {
+  apiKey: "AIzaSyDeuAsKhyFHhQ90gHrCzrtdgcIhLujdHdU",
+  authDomain: "mystery-reader-e422f.firebaseapp.com",
+  databaseURL: "https://mystery-reader-e422f-default-rtdb.firebaseio.com",
+  projectId: "mystery-reader-e422f",
+  storageBucket: "mystery-reader-e422f.firebasestorage.app",
+  messagingSenderId: "750211625466",
+  appId: "1:750211625466:web:b65a1950fb39eba8f6f443"
+};
+
+(function(){
+  // Always use baked config first; fall back to any manually saved config
+  try{_initFb(BAKED_CONFIG);}
+  catch(e){
+    const saved=localStorage.getItem('fb_config');
+    if(saved){try{_initFb(JSON.parse(saved));}catch(e2){}}
+  }
+  updateFbStatus();
+})();
+
+// ── CASE GENERATION ────────────────────────────────────────────────────────
+async function startCase(){
+  st.name=document.getElementById('student-name').value.trim()||'Anonymous';
+  st.difficulty=document.getElementById('difficulty').value;
+  st.genre=document.getElementById('genre').value;
+  show('s-loading');
+  let i=0; const me=document.getElementById('lmsg');
+  const mi=setInterval(()=>{me.textContent=LMSGS[i++%LMSGS.length];},1800);
+  try{await genMystery();clearInterval(mi);showReading();}
+  catch(e){clearInterval(mi);console.error(e);alert('Error generating the mystery. Please check your connection and try again.');show('s-home');}
+}
+
+async function genMystery(){
+  const prompt=`You are an expert author of educational mystery stories for 7th-8th grade students.
+
+STEP 1 — PLAN FIRST (do this mentally before writing):
+Before writing a single word of story, establish these facts and never contradict them:
+- WHO committed the act, and exactly HOW they did it
+- WHEN and WHERE the key events happened (be specific — same room, same time of day throughout)
+- WHY the culprit did it (clear, believable motive)
+- 3-4 physical clues that point to the culprit (these must appear in the story)
+- 1-2 red herrings that seem suspicious but are innocent
+- The culprit must be a named character introduced early in the story
+
+STEP 2 — WRITE THE STORY:
+Generate a mystery story ${GENRE[st.genre]}. ${DIFF[st.difficulty]}
+
+Story requirements:
+- Length: 1400-1650 words
+- The story must be INTERNALLY CONSISTENT — every fact stated must remain true throughout. Never contradict a detail you already established (e.g. if a door was locked, it stays locked; if a character left at noon, they were not there at noon)
+- Introduce the culprit as a named character in the first third of the story
+- Plant exactly 3 physical clues that a careful reader can use to identify the culprit
+- All clues and red herrings must have logical explanations revealed in the solution
+- Maintain a consistent timeline — use specific time references (e.g. "at 2pm", "ten minutes later") and never create timeline contradictions
+- Characters must behave consistently with their established personality and location
+- The solution must follow logically from clues in the story — no surprise culprits introduced at the end
+- Engaging, age-appropriate, vivid sensory details
+- Include exactly 6 context clues marked inline as [CLUE:word:meaning] spread naturally throughout the text
+
+STEP 3 — WRITE THE QUIZ:
+Generate exactly 10 quiz questions. Every question must have ONE clearly correct answer based only on what is explicitly written in the story:
+- 3 vocabulary questions testing the [CLUE] words (ask students to choose the meaning based on context)
+- 3 reading comprehension questions (specific facts stated in the story — avoid ambiguous questions)
+- 2 inference questions (logical conclusions a careful reader can draw — must be supportable with story evidence)
+- 2 solution questions (who did it and one key piece of evidence or motive from the story)
+For every question, ensure the 3 wrong answer options are clearly wrong based on the story, not just plausible guesses.
+
+Respond ONLY with valid JSON, no markdown backticks, no preamble:
+{"title":"...","story":"full story with [CLUE:word:meaning] inline","solution":"2-3 sentence explanation naming the culprit, their motive, and the key evidence","questions":[{"q":"...","type":"vocabulary|comprehension|inference|solution","options":["A) ...","B) ...","C) ...","D) ..."],"answer":0}]}`;
+
+  const r=await fetch(RENDER_API_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4000,messages:[{role:'user',content:prompt}]})
+  });
+  const d=await r.json();
+  if(d.error) throw new Error("API: " + (d.error.message || JSON.stringify(d.error)));
+  const txt=d.content.map(b=>b.text||'').join('');
+  const p=JSON.parse(txt.replace(/```json|```/g,'').trim());
+  st.story=p.story; st.title=p.title; st.questions=p.questions; st.solution=p.solution;
+}
+
+// ── READING ────────────────────────────────────────────────────────────────
+function showReading(){
+  document.getElementById('story-title').textContent=st.title;
+  document.getElementById('reading-label').textContent='Case File — '+st.name;
+  let n=0;
+  const html=st.story.replace(/\[CLUE:([^:]+):([^\]]+)\]/g,(_,w,m)=>{
+    n++;
+    return`<span class="clue" onclick="tapClue(this,'${w.replace(/'/g,"\\'")}')">
+      ${w}<span class="clue-tip">Context clue: ${m}</span></span>`;
+  });
+  document.getElementById('story-body').innerHTML=html;
+  document.getElementById('clue-count').textContent='0/'+n;
+  st.timeLeft=1200; st.cluesHovered.clear();
+  clearInterval(st.timerInt);
+  st.timerInt=setInterval(tick,1000);
+  show('s-reading');
+}
+
+function tapClue(el,w){
+  // Toggle for mobile tap, hover handles desktop
+  el.classList.toggle('tapped');
+  st.cluesHovered.add(w);
+  const total=document.querySelectorAll('.clue').length;
+  document.getElementById('clue-count').textContent=st.cluesHovered.size+'/'+total;
+}
+
+function tick(){
+  st.timeLeft--;
+  const m=Math.floor(st.timeLeft/60),s=st.timeLeft%60;
+  document.getElementById('timer-display').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  document.getElementById('timer-bar').style.width=(st.timeLeft/1200*100)+'%';
+  if(st.timeLeft<=0){clearInterval(st.timerInt);goToQuiz();}
+}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────
+function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};buildDots();renderQ();show('s-quiz');}
+
+function buildDots(){
+  document.getElementById('pdots').innerHTML=st.questions.map((_,i)=>`<div class="dot" id="dot-${i}"></div>`).join('');
+}
+
+function renderQ(){
+  const q=st.questions[st.currentQ],ans=st.answers[st.currentQ];
+  const types={vocabulary:'vocab',comprehension:'comprehension',inference:'inference',solution:'solution'};
+  let html=`<div class="q-item">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span class="badge bg">${types[q.type]||q.type}</span>
+      <span style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:1px;">Q${st.currentQ+1} of ${st.questions.length}</span>
+    </div>
+    <div class="q-text">${q.q}</div>`;
+  q.options.forEach((o,i)=>{
+    let c='q-opt';
+    if(ans!==undefined){if(i===q.answer)c+=' correct';else if(i===ans&&i!==q.answer)c+=' wrong';}
+    html+=`<button class="${c}" onclick="selAns(${i})" ${ans!==undefined?'disabled':''}>${o}</button>`;
+  });
+  html+='</div>';
+  document.getElementById('quiz-area').innerHTML=html;
+  const last=st.currentQ===st.questions.length-1;
+  document.getElementById('prev-btn').style.display=st.currentQ>0?'inline-block':'none';
+  document.getElementById('next-btn').style.display=last?'none':'inline-block';
+  document.getElementById('sub-btn').style.display=last?'inline-block':'none';
+  document.querySelectorAll('.dot').forEach((d,i)=>{
+    d.className='dot'+(i===st.currentQ?' current':st.answers[i]!==undefined?' done':'');
+  });
+}
+
+function selAns(i){if(st.answers[st.currentQ]!==undefined)return;st.answers[st.currentQ]=i;renderQ();}
+function nextQ(){if(st.currentQ<st.questions.length-1){st.currentQ++;renderQ();window.scrollTo(0,0);}}
+function prevQ(){if(st.currentQ>0){st.currentQ--;renderQ();window.scrollTo(0,0);}}
+
+// ── RESULTS ────────────────────────────────────────────────────────────────
+function submitQuiz(){
+  const ua=st.questions.filter((_,i)=>st.answers[i]===undefined);
+  if(ua.length>0&&!confirm(`${ua.length} unanswered question(s). Submit anyway?`))return;
+  let correct=0;
+  st.questions.forEach((q,i)=>{if(st.answers[i]===q.answer)correct++;});
+  const total=st.questions.length,pct=Math.round(correct/total*100);
+  document.getElementById('score-num').textContent=correct;
+  document.getElementById('score-den').textContent='out of '+total;
+  const vs=[[0,'Cold Case','Keep reading — every detective starts somewhere.'],[50,'Beat Cop',"You're on the right track. Review the context clues."],[70,'Detective','Solid casework. A few clues slipped by.'],[90,'Sharp Detective','Excellent deduction. Almost perfect.'],[100,'Master Inspector',"Perfect score. The mystery never stood a chance."]];
+  const v=vs.reduce((a,b)=>pct>=b[0]?b:a);
+  document.getElementById('verdict-text').textContent=v[1];
+  document.getElementById('score-comment').textContent=v[2];
+  document.getElementById('result-title').textContent=pct>=70?'Case Closed':'Case Unsolved';
+  document.getElementById('solution-text').textContent=st.solution;
+  let rev='';
+  st.questions.filter(q=>q.type==='vocabulary').forEach(q=>{
+    const idx=st.questions.indexOf(q);const ok=st.answers[idx]===q.answer;
+    rev+=`<div class="trow"><span class="badge ${ok?'bg':'br'}">${ok?'✓':'✗'}</span><span style="font-size:12px;color:var(--ncd);">${q.q.substring(0,70)}...</span></div>`;
+  });
+  document.getElementById('review-list').innerHTML=rev||'<div style="color:var(--nm);font-size:12px;">No vocabulary questions.</div>';
+  const secsRead=1200-st.timeLeft;
+  const minsRead=Math.floor(secsRead/60),secsRem=secsRead%60;
+  const timeReadStr=minsRead+'m '+secsRem+'s';
+  st.lastResult={name:st.name,title:st.title,score:correct,total,pct,difficulty:st.difficulty,genre:st.genre,cluesFound:st.cluesHovered.size,secsRead,timeReadStr,date:new Date().toISOString(),dateStr:new Date().toLocaleDateString()};
+  document.getElementById('sync-status').innerHTML='';
+  show('s-results');
+}
+
+async function saveResult(){
+  if(!st.lastResult)return;
+  const el=document.getElementById('sync-status');
+  if(st.fbConnected&&st.db){
+    try{
+      el.innerHTML='<span class="sync-dot spend"></span>Saving...';
+      await st.db.ref('results/'+Date.now()).set(st.lastResult);
+      el.innerHTML='<span class="sync-dot sok"></span><span style="color:#4a9">Saved — visible on all devices</span>';
+    } catch(e){el.innerHTML='<span class="sync-dot serr"></span>Firebase error — saved locally';saveLocal();}
+  } else {
+    saveLocal();
+    el.innerHTML='<span class="sync-dot spend"></span>Saved locally — <span style="color:var(--ng);cursor:pointer;text-decoration:underline;" onclick="show(\'s-setup\')">connect Firebase</span> to sync';
+  }
+}
+
+function saveLocal(){
+  const s=JSON.parse(localStorage.getItem('mystery_results')||'[]');
+  s.push(st.lastResult);localStorage.setItem('mystery_results',JSON.stringify(s));
+}
+
+// ── TEACHER DASHBOARD ──────────────────────────────────────────────────────
+// ── PASSCODES — change these to whatever you like ──────────────────────────
+const TEACHER_PASS = "detective2024";   // passcode to VIEW the dashboard
+const ADMIN_PASS   = "clearcase999";    // passcode to DELETE all results
+
+function showTeacher(){
+  document.getElementById('passcode-input').value='';
+  document.getElementById('passcode-error').textContent='';
+  show('s-passcode');
+}
+
+function checkPasscode(){
+  const val=document.getElementById('passcode-input').value.trim();
+  if(val===TEACHER_PASS){
+    loadTeacherData();
+    show('s-teacher');
+  } else {
+    const el=document.getElementById('passcode-error');
+    el.textContent='Incorrect passcode. Try again.';
+    document.getElementById('passcode-input').value='';
+    setTimeout(()=>el.textContent='',2500);
+  }
+}
+
+function promptAdminCode(){
+  document.getElementById('admin-input').value='';
+  document.getElementById('admin-error').textContent='';
+  show('s-admincode');
+}
+
+function checkAdminCode(){
+  const val=document.getElementById('admin-input').value.trim();
+  if(val===ADMIN_PASS){
+    doConfirmedClear();
+  } else {
+    const el=document.getElementById('admin-error');
+    el.textContent='Incorrect admin passcode.';
+    document.getElementById('admin-input').value='';
+    setTimeout(()=>el.textContent='',2500);
+  }
+}
+
+async function loadTeacherData(){
+  let results=[];
+  const ind=document.getElementById('fb-sync-ind');
+  if(st.fbConnected&&st.db){
+    try{
+      if(ind)ind.innerHTML='<span class="sync-dot spend"></span>Syncing...';
+      const snap=await st.db.ref('results').once('value');
+      results=Object.values(snap.val()||{});
+      if(ind)ind.innerHTML='<span class="sync-dot sok"></span>Live sync active';
+    } catch(e){results=getLocal();}
+  } else {results=getLocal();}
+  results.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  st.allResults=results;
+  renderTeacherResults(results);
+}
+
+function getLocal(){return JSON.parse(localStorage.getItem('mystery_results')||'[]');}
+
+function renderTeacherResults(r){
+  if(!r.length){document.getElementById('teacher-list').innerHTML='<div style="text-align:center;color:var(--nm);padding:36px 0;font-family:\'Special Elite\',monospace;font-size:12px;letter-spacing:1px;">No results yet.</div>';return;}
+  document.getElementById('teacher-list').innerHTML=r.map(x=>`
+    <div class="trow">
+      <span class="badge ${x.pct>=70?'bg':'br'}">${x.pct}%</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${x.name}</div>
+        <div style="font-size:11px;color:var(--nm);font-family:'Special Elite',monospace;">${(x.title||'').substring(0,28)} · ${x.dateStr||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:11px;color:var(--ng);">${x.score}/${x.total}</div>
+        <div style="font-size:10px;color:var(--nm);font-family:'Special Elite',monospace;">${x.difficulty||''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderAnalytics(r){
+  const el=id=>document.getElementById(id);
+  if(!r.length){['avg-score','top-student','avg-clues','avg-time','popular-genre'].forEach(i=>el(i).textContent='—');el('total-cases').textContent=0;el('score-dist').innerHTML='<div style="color:var(--nm);font-size:12px;">No data yet.</div>';el('diff-breakdown').innerHTML='';el('genre-breakdown').innerHTML='';el('time-breakdown').innerHTML='';return;}
+  el('avg-score').textContent=Math.round(r.reduce((a,x)=>a+x.pct,0)/r.length)+'%';
+  el('total-cases').textContent=r.length;
+  el('top-student').textContent=r.reduce((a,x)=>x.pct>a.pct?x:a,r[0]).name.split(' ')[0];
+  el('avg-clues').textContent=(r.reduce((a,x)=>a+(x.cluesFound||0),0)/r.length).toFixed(1);
+  const bands=[['90–100',r.filter(x=>x.pct>=90).length],['70–89',r.filter(x=>x.pct>=70&&x.pct<90).length],['50–69',r.filter(x=>x.pct>=50&&x.pct<70).length],['Below 50',r.filter(x=>x.pct<50).length]];
+  el('score-dist').innerHTML=bands.map(([l,n])=>`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);margin-bottom:3px;"><span>${l}%</span><span>${n} student${n!==1?'s':''}</span></div><div class="prog-bar-w"><div class="prog-bar" style="width:${r.length?Math.round(n/r.length*100):0}%"></div></div></div>`).join('');
+  el('diff-breakdown').innerHTML=['easy','medium','hard'].map(d=>{const dr=r.filter(x=>x.difficulty===d);const da=dr.length?Math.round(dr.reduce((a,x)=>a+x.pct,0)/dr.length):null;return`<div class="trow"><span style="font-family:'Special Elite',monospace;font-size:11px;color:var(--ng);min-width:70px;text-transform:capitalize;">${d}</span><span style="font-size:12px;color:var(--ncd);">${dr.length} case${dr.length!==1?'s':''}</span><span style="margin-left:auto;font-family:'Special Elite',monospace;font-size:11px;color:var(--ng);">${da!==null?da+'% avg':'—'}</span></div>`;}).join('');
+}
+
+function renderProgress(r){
+  const byS={};r.forEach(x=>{if(!byS[x.name])byS[x.name]=[];byS[x.name].push(x);});
+  if(!Object.keys(byS).length){document.getElementById('student-progress').innerHTML='<div style="color:var(--nm);font-size:12px;">No data yet.</div>';return;}
+  document.getElementById('student-progress').innerHTML=Object.entries(byS).map(([name,cases])=>{
+    const sorted=cases.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const trend=sorted.length>1?sorted[sorted.length-1].pct-sorted[0].pct:null;
+    return`<div style="margin-bottom:18px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-size:14px;">${name}</span><span style="font-family:'Special Elite',monospace;font-size:10px;color:${trend>0?'#4a9':trend<0?'var(--nrb)':'var(--nm)'};">${trend!==null?(trend>0?'▲ +':'▼ ')+trend+'%':'first case'}</span></div><div style="display:flex;gap:4px;align-items:flex-end;">${sorted.map(c=>`<div title="${c.dateStr}: ${c.pct}%" style="flex:1;max-width:32px;"><div style="height:48px;display:flex;align-items:flex-end;"><div style="width:100%;height:${Math.max(4,c.pct*0.48)}px;background:var(--ng);"></div></div><div style="font-family:'Special Elite',monospace;font-size:8px;color:var(--nm);text-align:center;margin-top:2px;">${c.pct}%</div></div>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function teacherTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['results','analytics','progress'][i]===tab));
+  ['t-results','t-analytics','t-progress'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('t-'+tab).style.display='block';
+  if(tab==='results')renderTeacherResults(st.allResults);
+  if(tab==='analytics')renderAnalytics(st.allResults);
+  if(tab==='progress')renderProgress(st.allResults);
+}
+
+async function doConfirmedClear(){
+  if(st.fbConnected&&st.db){try{await st.db.ref('results').remove();}catch(e){}}
+  localStorage.removeItem('mystery_results');
+  st.allResults=[];
+  renderTeacherResults([]);
+}
+</script>
+</body>
+</html>
