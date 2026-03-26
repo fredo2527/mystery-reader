@@ -735,9 +735,9 @@ function saveLocal(){
 }
 
 // ── TEACHER DASHBOARD ──────────────────────────────────────────────────────
-// ── PASSCODES — change these to whatever you like ──────────────────────────
-const TEACHER_PASS = "detective2024";   // passcode to VIEW the dashboard
-const ADMIN_PASS   = "clearcase999";    // passcode to DELETE all results
+// ── PASSCODES — verified server-side, never stored in browser ─────────────
+// To change passcodes: update TEACHER_PASS and ADMIN_PASS environment
+// variables in your Render dashboard — no code changes needed.
 
 function showTeacher(){
   document.getElementById('passcode-input').value='';
@@ -745,16 +745,29 @@ function showTeacher(){
   show('s-passcode');
 }
 
-function checkPasscode(){
+async function checkPasscode(){
   const val=document.getElementById('passcode-input').value.trim();
-  if(val===TEACHER_PASS){
-    loadTeacherData();
-    show('s-teacher');
-  } else {
-    const el=document.getElementById('passcode-error');
-    el.textContent='Incorrect passcode. Try again.';
-    document.getElementById('passcode-input').value='';
-    setTimeout(()=>el.textContent='',2500);
+  const el=document.getElementById('passcode-error');
+  const btn=document.querySelector('#s-passcode .btn-p');
+  if(!val){el.textContent='Please enter a passcode.';return;}
+  btn.textContent='Checking...';btn.disabled=true;
+  try{
+    const r=await fetch(RENDER_API_URL.replace('/api/claude','/api/verify-passcode'),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({passcode:val,type:'teacher'})
+    });
+    const d=await r.json();
+    if(d.valid){
+      loadTeacherData();show('s-teacher');
+    } else {
+      el.textContent='Incorrect passcode. Try again.';
+      document.getElementById('passcode-input').value='';
+      setTimeout(()=>el.textContent='',2500);
+    }
+  } catch(e){
+    el.textContent='Connection error. Try again.';
+  } finally {
+    btn.textContent='Enter Dashboard';btn.disabled=false;
   }
 }
 
@@ -764,15 +777,29 @@ function promptAdminCode(){
   show('s-admincode');
 }
 
-function checkAdminCode(){
+async function checkAdminCode(){
   const val=document.getElementById('admin-input').value.trim();
-  if(val===ADMIN_PASS){
-    doConfirmedClear();
-  } else {
-    const el=document.getElementById('admin-error');
-    el.textContent='Incorrect admin passcode.';
-    document.getElementById('admin-input').value='';
-    setTimeout(()=>el.textContent='',2500);
+  const el=document.getElementById('admin-error');
+  const btn=document.querySelector('#s-admincode .btn-d');
+  if(!val){el.textContent='Please enter a passcode.';return;}
+  btn.textContent='Checking...';btn.disabled=true;
+  try{
+    const r=await fetch(RENDER_API_URL.replace('/api/claude','/api/verify-passcode'),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({passcode:val,type:'admin'})
+    });
+    const d=await r.json();
+    if(d.valid){
+      doConfirmedClear();
+    } else {
+      el.textContent='Incorrect admin passcode.';
+      document.getElementById('admin-input').value='';
+      setTimeout(()=>el.textContent='',2500);
+    }
+  } catch(e){
+    el.textContent='Connection error. Try again.';
+  } finally {
+    btn.textContent='Confirm — Delete All';btn.disabled=false;
   }
 }
 
