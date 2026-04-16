@@ -130,7 +130,13 @@ select option{background:var(--ns);}
 .q-opt:hover{border-color:var(--ng);color:var(--ncr);}
 .q-opt.correct{border-color:#4a9;background:rgba(68,170,119,.15);color:#7dcea0;}
 .q-opt.wrong{border-color:var(--nrb);background:rgba(170,68,68,.15);color:#e07070;}
+.q-opt.selected{border-color:var(--ng);background:var(--nbo);color:var(--ncr);}
 .q-opt:disabled{cursor:default;}
+.confirm-row{margin-top:14px;text-align:center;animation:fadeIn .2s ease;}
+.confirm-hint{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;color:var(--nm);margin-bottom:8px;}
+.review-banner{background:var(--nbo);border:1px solid var(--ng);padding:10px 16px;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;animation:fadeIn .2s ease;}
+.review-banner-txt{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;color:var(--ng);}
 
 .score-ring{width:100px;height:100px;border-radius:50%;border:3px solid var(--ng);
   display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 18px;}
@@ -307,18 +313,22 @@ select option{background:var(--ns);}
     <div class="mt" id="reading-label">Case File</div>
     <div class="mn" id="story-title">The Mystery</div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+  <div id="timer-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
     <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:2px;">TIME REMAINING</div>
     <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--ng);" id="timer-display">20:00</div>
   </div>
-  <div class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
+  <div id="timer-bar-row" class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
+  <div id="review-banner" class="review-banner" style="display:none;">
+    <span class="review-banner-txt">📖 Review mode — quiz paused</span>
+    <button class="btn btn-sm btn-p" onclick="returnToQuiz()">Back to Questions ›</button>
+  </div>
   <div class="card">
     <div style="font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-bottom:10px;">
       Context clues are <span style="background:rgba(201,168,76,.2);border-bottom:1px solid var(--ng);padding:0 3px;">highlighted</span> — tap to reveal meaning
     </div>
     <div class="story-scroll"><div class="story-text" id="story-body"></div></div>
   </div>
-  <div class="btn-row">
+  <div id="reading-btn-row" class="btn-row">
     <button class="btn btn-sm">Clues: <span id="clue-count">0</span></button>
     <button class="btn btn-sm btn-p" onclick="goToQuiz()">Ready to Solve ›</button>
   </div>
@@ -331,6 +341,7 @@ select option{background:var(--ns);}
   <div id="quiz-area"></div>
   <div class="btn-row">
     <button class="btn btn-sm" id="prev-btn" onclick="prevQ()" style="display:none">‹ Prev</button>
+    <button class="btn btn-sm" onclick="reviewStory()">📖 Review Case File</button>
     <button class="btn btn-sm btn-p" id="next-btn" onclick="nextQ()">Next ›</button>
     <button class="btn btn-sm btn-p" id="sub-btn" onclick="submitQuiz()" style="display:none">Submit Case ›</button>
   </div>
@@ -446,7 +457,7 @@ const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
 // ── STATE ──────────────────────────────────────────────────────────────────
 const st = {
   name:'', difficulty:'medium', genre:'school',
-  story:'', title:'', questions:[], answers:{},
+  story:'', title:'', questions:[], answers:{}, pending:{},
   currentQ:0, timerInt:null, timeLeft:1200,
   cluesHovered:new Set(), solution:'',
   lastResult:null, db:null, fbConnected:false, allResults:[]
@@ -650,7 +661,29 @@ function tick(){
 }
 
 // ── QUIZ ───────────────────────────────────────────────────────────────────
-function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};buildDots();renderQ();show('s-quiz');}
+function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};st.pending={};buildDots();renderQ();show('s-quiz');}
+
+// ── REVIEW MODE — go back to story during quiz ─────────────────────────────
+function reviewStory(){
+  clearInterval(st.timerInt); // pause timer
+  // Switch reading screen to review mode UI
+  document.getElementById('timer-row').style.display='none';
+  document.getElementById('timer-bar-row').style.display='none';
+  document.getElementById('review-banner').style.display='flex';
+  document.getElementById('reading-btn-row').style.display='none';
+  show('s-reading');
+  window.scrollTo(0,0);
+}
+
+function returnToQuiz(){
+  // Restore reading screen to normal mode for next time
+  document.getElementById('timer-row').style.display='flex';
+  document.getElementById('timer-bar-row').style.display='block';
+  document.getElementById('review-banner').style.display='none';
+  document.getElementById('reading-btn-row').style.display='flex';
+  show('s-quiz');
+  window.scrollTo(0,0);
+}
 
 function buildDots(){
   document.getElementById('pdots').innerHTML=st.questions.map((_,i)=>`<div class="dot" id="dot-${i}"></div>`).join('');
@@ -658,6 +691,8 @@ function buildDots(){
 
 function renderQ(){
   const q=st.questions[st.currentQ],ans=st.answers[st.currentQ];
+  const pending=st.pending[st.currentQ]; // selected but not yet confirmed
+  const locked=ans!==undefined;
   const types={vocabulary:'vocab',comprehension:'comprehension',inference:'inference',solution:'solution'};
   let html=`<div class="q-item">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -667,21 +702,47 @@ function renderQ(){
     <div class="q-text">${q.q}</div>`;
   q.options.forEach((o,i)=>{
     let c='q-opt';
-    if(ans!==undefined){if(i===q.answer)c+=' correct';else if(i===ans&&i!==q.answer)c+=' wrong';}
-    html+=`<button class="${c}" onclick="selAns(${i})" ${ans!==undefined?'disabled':''}>${o}</button>`;
+    if(locked){
+      if(i===q.answer)c+=' correct';
+      else if(i===ans&&i!==q.answer)c+=' wrong';
+    } else if(!locked&&i===pending){
+      c+=' selected';
+    }
+    html+=`<button class="${c}" onclick="selAns(${i})" ${locked?'disabled':''}>${o}</button>`;
   });
+  // Show confirm button only when something is pending but not yet locked
+  if(!locked&&pending!==undefined){
+    html+=`<div class="confirm-row">
+      <div class="confirm-hint">Tap confirm to lock in your answer</div>
+      <button class="btn btn-p" onclick="confirmAns()">Confirm Answer ›</button>
+    </div>`;
+  }
   html+='</div>';
   document.getElementById('quiz-area').innerHTML=html;
   const last=st.currentQ===st.questions.length-1;
   document.getElementById('prev-btn').style.display=st.currentQ>0?'inline-block':'none';
-  document.getElementById('next-btn').style.display=last?'none':'inline-block';
-  document.getElementById('sub-btn').style.display=last?'inline-block':'none';
+  // Hide Next/Submit until answer is locked in
+  document.getElementById('next-btn').style.display=(locked&&!last)?'inline-block':'none';
+  document.getElementById('sub-btn').style.display=(locked&&last)?'inline-block':'none';
   document.querySelectorAll('.dot').forEach((d,i)=>{
     d.className='dot'+(i===st.currentQ?' current':st.answers[i]!==undefined?' done':'');
   });
 }
 
-function selAns(i){if(st.answers[st.currentQ]!==undefined)return;st.answers[st.currentQ]=i;renderQ();}
+// Stage 1: highlight selection without locking
+function selAns(i){
+  if(st.answers[st.currentQ]!==undefined)return; // already locked
+  st.pending[st.currentQ]=i;
+  renderQ();
+}
+
+// Stage 2: lock in the pending selection
+function confirmAns(){
+  const i=st.pending[st.currentQ];
+  if(i===undefined)return;
+  st.answers[st.currentQ]=i;
+  renderQ();
+}
 function nextQ(){if(st.currentQ<st.questions.length-1){st.currentQ++;renderQ();window.scrollTo(0,0);}}
 function prevQ(){if(st.currentQ>0){st.currentQ--;renderQ();window.scrollTo(0,0);}}
 
