@@ -130,13 +130,7 @@ select option{background:var(--ns);}
 .q-opt:hover{border-color:var(--ng);color:var(--ncr);}
 .q-opt.correct{border-color:#4a9;background:rgba(68,170,119,.15);color:#7dcea0;}
 .q-opt.wrong{border-color:var(--nrb);background:rgba(170,68,68,.15);color:#e07070;}
-.q-opt.selected{border-color:var(--ng);background:var(--nbo);color:var(--ncr);}
 .q-opt:disabled{cursor:default;}
-.confirm-row{margin-top:14px;text-align:center;animation:fadeIn .2s ease;}
-.confirm-hint{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;color:var(--nm);margin-bottom:8px;}
-.review-banner{background:var(--nbo);border:1px solid var(--ng);padding:10px 16px;margin-bottom:14px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;animation:fadeIn .2s ease;}
-.review-banner-txt{font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;color:var(--ng);}
 
 .score-ring{width:100px;height:100px;border-radius:50%;border:3px solid var(--ng);
   display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 18px;}
@@ -225,7 +219,7 @@ select option{background:var(--ns);}
   <div class="masthead">
     <div class="mt">The Detective's Desk</div>
     <div class="mn">Mystery Reader</div>
-    <div class="ms">Literacy + Deduction — Grades 7 &amp; 8</div>
+    <div class="ms">Literacy + Deduction — Grades 8 &amp; 9</div>
   </div>
   <div id="fb-status" style="text-align:center;margin-bottom:12px;font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;min-height:18px;"></div>
   <div class="theme-bar">
@@ -313,22 +307,18 @@ select option{background:var(--ns);}
     <div class="mt" id="reading-label">Case File</div>
     <div class="mn" id="story-title">The Mystery</div>
   </div>
-  <div id="timer-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
     <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:2px;">TIME REMAINING</div>
     <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--ng);" id="timer-display">20:00</div>
   </div>
-  <div id="timer-bar-row" class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
-  <div id="review-banner" class="review-banner" style="display:none;">
-    <span class="review-banner-txt">📖 Review mode — quiz paused</span>
-    <button class="btn btn-sm btn-p" onclick="returnToQuiz()">Back to Questions ›</button>
-  </div>
+  <div class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
   <div class="card">
     <div style="font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-bottom:10px;">
       Context clues are <span style="background:rgba(201,168,76,.2);border-bottom:1px solid var(--ng);padding:0 3px;">highlighted</span> — tap to reveal meaning
     </div>
     <div class="story-scroll"><div class="story-text" id="story-body"></div></div>
   </div>
-  <div id="reading-btn-row" class="btn-row">
+  <div class="btn-row">
     <button class="btn btn-sm">Clues: <span id="clue-count">0</span></button>
     <button class="btn btn-sm btn-p" onclick="goToQuiz()">Ready to Solve ›</button>
   </div>
@@ -337,11 +327,13 @@ select option{background:var(--ns);}
 <!-- QUIZ -->
 <div class="screen" id="s-quiz">
   <div class="masthead"><div class="mt">Interrogation Room</div><div class="mn">Answer the Questions</div></div>
+  <div style="text-align:center;font-family:'Special Elite',monospace;font-size:11px;letter-spacing:1px;color:var(--ng);margin-bottom:10px;">
+    ⭐ <span id="live-points">0</span> pts so far
+  </div>
   <div class="pdots" id="pdots"></div>
   <div id="quiz-area"></div>
   <div class="btn-row">
     <button class="btn btn-sm" id="prev-btn" onclick="prevQ()" style="display:none">‹ Prev</button>
-    <button class="btn btn-sm" onclick="reviewStory()">📖 Review Case File</button>
     <button class="btn btn-sm btn-p" id="next-btn" onclick="nextQ()">Next ›</button>
     <button class="btn btn-sm btn-p" id="sub-btn" onclick="submitQuiz()" style="display:none">Submit Case ›</button>
   </div>
@@ -355,6 +347,25 @@ select option{background:var(--ns);}
     <div style="font-family:'Special Elite',monospace;font-size:14px;color:var(--ng);margin-bottom:6px;" id="verdict-text">Sharp Detective</div>
     <div style="font-size:12px;color:var(--nm);margin-bottom:8px;" id="score-comment"></div>
     <div id="sync-status" style="font-family:'Special Elite',monospace;font-size:10px;letter-spacing:1px;min-height:18px;"></div>
+  </div>
+  <div class="card" id="points-card">
+    <div class="lbl">Detective Points Earned</div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+      <div style="font-family:'Playfair Display',serif;font-size:34px;color:var(--ng);" id="points-total">0</div>
+      <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:1px;">POINTS THIS CASE</div>
+    </div>
+    <div id="points-breakdown" style="font-size:12px;color:var(--ncd);line-height:1.9;"></div>
+    <div id="rank-box" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--nbo);display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-size:18px;" id="rank-icon">🔎</span>
+          <span style="font-family:'Special Elite',monospace;font-size:12px;letter-spacing:1px;color:var(--ng);" id="rank-name">Trainee</span>
+        </div>
+        <div style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);" id="rank-total">0 total pts</div>
+      </div>
+      <div class="prog-bar-w" style="margin-top:8px;"><div class="prog-bar" id="rank-progress" style="width:0%"></div></div>
+      <div style="font-family:'Special Elite',monospace;font-size:9px;color:var(--nm);margin-top:5px;" id="rank-next"></div>
+    </div>
   </div>
   <div class="card">
     <div class="lbl">The Solution</div>
@@ -431,6 +442,7 @@ select option{background:var(--ns);}
       <div class="stat-card"><div class="stat-n" id="avg-time">—</div><div class="stat-l">Avg Time Read</div></div>
       <div class="stat-card"><div class="stat-n" id="popular-genre">—</div><div class="stat-l">Top Case Type</div></div>
     </div>
+    <div class="card"><div class="lbl">Detective Points Leaderboard</div><div id="points-leaderboard"></div></div>
     <div class="card"><div class="lbl">Score Distribution</div><div id="score-dist"></div></div>
     <div class="card"><div class="lbl">Difficulty Breakdown</div><div id="diff-breakdown"></div></div>
     <div class="card"><div class="lbl">Case Type Breakdown</div><div id="genre-breakdown"></div></div>
@@ -457,7 +469,7 @@ const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
 // ── STATE ──────────────────────────────────────────────────────────────────
 const st = {
   name:'', difficulty:'medium', genre:'school',
-  story:'', title:'', questions:[], answers:{}, pending:{},
+  story:'', title:'', questions:[], answers:{},
   currentQ:0, timerInt:null, timeLeft:1200,
   cluesHovered:new Set(), solution:'',
   lastResult:null, db:null, fbConnected:false, allResults:[]
@@ -465,10 +477,37 @@ const st = {
 
 const LMSGS=['Composing the mystery...','Planting the clues...','Setting the scene...','The suspect is lurking...','Cross-referencing the evidence...','Building the case file...','Interviewing witnesses...','This one is detailed — hang tight...'];
 const DIFF={
-  easy:'Use language slightly above a comfortable 7th grade reading level. Include a handful of unfamiliar words that students can work out from context. Sentence structure should be mostly straightforward with occasional longer sentences. The mystery plot should have a clear sequence of events with 1-2 mild twists.',
-  medium:'Use vocabulary at a solid 8th grade challenge level — include words students may not know but can infer from surrounding sentences. Mix short punchy sentences with longer complex ones. The mystery should have 2-3 plot layers, a convincing red herring, and require careful reading to identify the culprit.',
-  hard:'Use advanced vocabulary throughout — multi-syllable words, literary devices, and figurative language that challenge strong readers. Sentence structures should be varied and complex. The mystery should have 3+ plot layers, multiple red herrings, and subtle clues that require inference and close reading to piece together.'
+  easy:'Use language slightly above a comfortable 8th grade reading level. Include a handful of unfamiliar words that students can work out from context. Sentence structure should be mostly straightforward with occasional longer, more complex sentences. The mystery plot should have a clear sequence of events with 1-2 mild twists.',
+  medium:'Use vocabulary at a solid 9th grade challenge level — include words students may not know but can infer from surrounding sentences. Mix short punchy sentences with longer, more sophisticated ones, including some subordinate clauses. The mystery should have 2-3 plot layers, a convincing red herring, and require careful reading to identify the culprit.',
+  hard:'Use advanced vocabulary throughout — multi-syllable words, literary devices, and figurative language that challenge strong readers at a 9th-10th grade level. Sentence structures should be varied and complex. The mystery should have 3+ plot layers, multiple red herrings, and subtle clues that require inference and close reading to piece together.'
 };
+// ── DETECTIVE POINTS ────────────────────────────────────────────────────────
+const PTS={
+  clue:15,               // per context clue tapped
+  vocabulary:20,         // per correct vocabulary question
+  comprehension:25,      // per correct comprehension question
+  inference:30,          // per correct inference question
+  solution:35,           // per correct solution question
+  perfect:75,            // bonus for a perfect score
+  timeMax:100            // max possible time bonus (scales with time remaining)
+};
+const RANKS=[
+  {min:0,    name:'Trainee',          icon:'🔎'},
+  {min:250,  name:'Deputized',        icon:'🕵️'},
+  {min:600,  name:'Detective',        icon:'🎩'},
+  {min:1200, name:'Senior Detective', icon:'🗂️'},
+  {min:2200, name:'Inspector',        icon:'⭐'},
+  {min:4000, name:'Chief Inspector',  icon:'👑'}
+];
+function rankFor(pts){
+  let r=RANKS[0];
+  for(const x of RANKS){if(pts>=x.min)r=x;}
+  return r;
+}
+function nextRank(pts){
+  return RANKS.find(x=>x.min>pts)||null;
+}
+
 const GENRE={school:'set in a middle school — something gone missing or a strange event occurred',neighborhood:'set in a neighborhood — a local mystery involving houses, parks, or community members',historical:'set in the early 1900s — a historical whodunit with period-appropriate details',science:'set in a school science lab — a mysterious experiment or missing equipment',sports:'set around a sports team or athletic competition — involving sabotage, a missing trophy, or an unfair advantage',adventure:'set in an outdoor wilderness or summer camp setting — involving a strange discovery, missing person, or natural mystery'};
 
 // ── SCREEN ─────────────────────────────────────────────────────────────────
@@ -577,7 +616,7 @@ async function startCase(){
 }
 
 async function genMystery(){
-  const prompt=`You are an expert author of educational mystery stories for 7th-8th grade students.
+  const prompt=`You are an expert author of educational mystery stories for 8th-9th grade students.
 
 STEP 1 — PLAN FIRST (do this mentally before writing):
 Before writing a single word of story, establish these facts and never contradict them:
@@ -661,29 +700,7 @@ function tick(){
 }
 
 // ── QUIZ ───────────────────────────────────────────────────────────────────
-function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};st.pending={};buildDots();renderQ();show('s-quiz');}
-
-// ── REVIEW MODE — go back to story during quiz ─────────────────────────────
-function reviewStory(){
-  clearInterval(st.timerInt); // pause timer
-  // Switch reading screen to review mode UI
-  document.getElementById('timer-row').style.display='none';
-  document.getElementById('timer-bar-row').style.display='none';
-  document.getElementById('review-banner').style.display='flex';
-  document.getElementById('reading-btn-row').style.display='none';
-  show('s-reading');
-  window.scrollTo(0,0);
-}
-
-function returnToQuiz(){
-  // Restore reading screen to normal mode for next time
-  document.getElementById('timer-row').style.display='flex';
-  document.getElementById('timer-bar-row').style.display='block';
-  document.getElementById('review-banner').style.display='none';
-  document.getElementById('reading-btn-row').style.display='flex';
-  show('s-quiz');
-  window.scrollTo(0,0);
-}
+function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};buildDots();renderQ();updateLivePoints();show('s-quiz');}
 
 function buildDots(){
   document.getElementById('pdots').innerHTML=st.questions.map((_,i)=>`<div class="dot" id="dot-${i}"></div>`).join('');
@@ -691,8 +708,6 @@ function buildDots(){
 
 function renderQ(){
   const q=st.questions[st.currentQ],ans=st.answers[st.currentQ];
-  const pending=st.pending[st.currentQ]; // selected but not yet confirmed
-  const locked=ans!==undefined;
   const types={vocabulary:'vocab',comprehension:'comprehension',inference:'inference',solution:'solution'};
   let html=`<div class="q-item">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -702,46 +717,28 @@ function renderQ(){
     <div class="q-text">${q.q}</div>`;
   q.options.forEach((o,i)=>{
     let c='q-opt';
-    if(locked){
-      if(i===q.answer)c+=' correct';
-      else if(i===ans&&i!==q.answer)c+=' wrong';
-    } else if(!locked&&i===pending){
-      c+=' selected';
-    }
-    html+=`<button class="${c}" onclick="selAns(${i})" ${locked?'disabled':''}>${o}</button>`;
+    if(ans!==undefined){if(i===q.answer)c+=' correct';else if(i===ans&&i!==q.answer)c+=' wrong';}
+    html+=`<button class="${c}" onclick="selAns(${i})" ${ans!==undefined?'disabled':''}>${o}</button>`;
   });
-  // Show confirm button only when something is pending but not yet locked
-  if(!locked&&pending!==undefined){
-    html+=`<div class="confirm-row">
-      <div class="confirm-hint">Tap confirm to lock in your answer</div>
-      <button class="btn btn-p" onclick="confirmAns()">Confirm Answer ›</button>
-    </div>`;
-  }
   html+='</div>';
   document.getElementById('quiz-area').innerHTML=html;
   const last=st.currentQ===st.questions.length-1;
   document.getElementById('prev-btn').style.display=st.currentQ>0?'inline-block':'none';
-  // Hide Next/Submit until answer is locked in
-  document.getElementById('next-btn').style.display=(locked&&!last)?'inline-block':'none';
-  document.getElementById('sub-btn').style.display=(locked&&last)?'inline-block':'none';
+  document.getElementById('next-btn').style.display=last?'none':'inline-block';
+  document.getElementById('sub-btn').style.display=last?'inline-block':'none';
   document.querySelectorAll('.dot').forEach((d,i)=>{
     d.className='dot'+(i===st.currentQ?' current':st.answers[i]!==undefined?' done':'');
   });
 }
 
-// Stage 1: highlight selection without locking
-function selAns(i){
-  if(st.answers[st.currentQ]!==undefined)return; // already locked
-  st.pending[st.currentQ]=i;
-  renderQ();
-}
+function selAns(i){if(st.answers[st.currentQ]!==undefined)return;st.answers[st.currentQ]=i;renderQ();updateLivePoints();}
 
-// Stage 2: lock in the pending selection
-function confirmAns(){
-  const i=st.pending[st.currentQ];
-  if(i===undefined)return;
-  st.answers[st.currentQ]=i;
-  renderQ();
+function updateLivePoints(){
+  const el=document.getElementById('live-points');
+  if(!el)return;
+  let pts=st.cluesHovered.size*PTS.clue;
+  st.questions.forEach((q,i)=>{if(st.answers[i]===q.answer)pts+=PTS[q.type]||0;});
+  el.textContent=pts;
 }
 function nextQ(){if(st.currentQ<st.questions.length-1){st.currentQ++;renderQ();window.scrollTo(0,0);}}
 function prevQ(){if(st.currentQ>0){st.currentQ--;renderQ();window.scrollTo(0,0);}}
@@ -770,7 +767,28 @@ function submitQuiz(){
   const secsRead=1200-st.timeLeft;
   const minsRead=Math.floor(secsRead/60),secsRem=secsRead%60;
   const timeReadStr=minsRead+'m '+secsRem+'s';
-  st.lastResult={name:st.name,title:st.title,score:correct,total,pct,difficulty:st.difficulty,genre:st.genre,cluesFound:st.cluesHovered.size,secsRead,timeReadStr,date:new Date().toISOString(),dateStr:new Date().toLocaleDateString()};
+
+  // ── points breakdown ──
+  const cluePts=st.cluesHovered.size*PTS.clue;
+  let answerPts=0;
+  const byType={vocabulary:0,comprehension:0,inference:0,solution:0};
+  st.questions.forEach((q,i)=>{
+    if(st.answers[i]===q.answer){answerPts+=PTS[q.type]||0;byType[q.type]=(byType[q.type]||0)+1;}
+  });
+  const perfectBonus=(correct===total)?PTS.perfect:0;
+  const timeBonus=Math.round((st.timeLeft/1200)*PTS.timeMax);
+  const casePoints=cluePts+answerPts+perfectBonus+timeBonus;
+
+  document.getElementById('points-total').textContent=casePoints;
+  const bdParts=[];
+  if(cluePts) bdParts.push(`<div>🔍 Clues found: ${st.cluesHovered.size} × ${PTS.clue} = <span style="color:var(--ng)">${cluePts} pts</span></div>`);
+  if(answerPts) bdParts.push(`<div>✓ Correct answers: <span style="color:var(--ng)">${answerPts} pts</span></div>`);
+  if(timeBonus) bdParts.push(`<div>⏱ Speed bonus: <span style="color:var(--ng)">${timeBonus} pts</span></div>`);
+  if(perfectBonus) bdParts.push(`<div>🏆 Perfect score bonus: <span style="color:var(--ng)">${perfectBonus} pts</span></div>`);
+  document.getElementById('points-breakdown').innerHTML=bdParts.join('')||'<div style="color:var(--nm)">No points earned this round.</div>';
+  document.getElementById('rank-box').style.display='none';
+
+  st.lastResult={name:st.name,title:st.title,score:correct,total,pct,difficulty:st.difficulty,genre:st.genre,cluesFound:st.cluesHovered.size,secsRead,timeReadStr,points:casePoints,date:new Date().toISOString(),dateStr:new Date().toLocaleDateString()};
   document.getElementById('sync-status').innerHTML='';
   show('s-results');
 }
@@ -788,6 +806,30 @@ async function saveResult(){
     saveLocal();
     el.innerHTML='<span class="sync-dot spend"></span>Saved locally — <span style="color:var(--ng);cursor:pointer;text-decoration:underline;" onclick="show(\'s-setup\')">connect Firebase</span> to sync';
   }
+  showRankProgress();
+}
+
+async function showRankProgress(){
+  let results=[];
+  if(st.fbConnected&&st.db){
+    try{const snap=await st.db.ref('results').once('value');results=Object.values(snap.val()||{});}
+    catch(e){results=getLocal();}
+  } else {results=getLocal();}
+  const mine=results.filter(x=>x.name===st.name);
+  const totalPts=mine.reduce((a,x)=>a+(x.points||0),0);
+  const r=rankFor(totalPts),nr=nextRank(totalPts);
+  document.getElementById('rank-icon').textContent=r.icon;
+  document.getElementById('rank-name').textContent=r.name;
+  document.getElementById('rank-total').textContent=totalPts+' total pts';
+  if(nr){
+    const span=nr.min-r.min,into=totalPts-r.min;
+    document.getElementById('rank-progress').style.width=Math.min(100,Math.round(into/span*100))+'%';
+    document.getElementById('rank-next').textContent=(nr.min-totalPts)+' pts to '+nr.name;
+  } else {
+    document.getElementById('rank-progress').style.width='100%';
+    document.getElementById('rank-next').textContent='Top rank achieved!';
+  }
+  document.getElementById('rank-box').style.display='block';
 }
 
 function saveLocal(){
@@ -900,7 +942,15 @@ function renderTeacherResults(r){
 
 function renderAnalytics(r){
   const el=id=>document.getElementById(id);
-  if(!r.length){['avg-score','top-student','avg-clues','avg-time','popular-genre'].forEach(i=>el(i).textContent='—');el('total-cases').textContent=0;el('score-dist').innerHTML='<div style="color:var(--nm);font-size:12px;">No data yet.</div>';el('diff-breakdown').innerHTML='';el('genre-breakdown').innerHTML='';el('time-breakdown').innerHTML='';return;}
+  if(!r.length){['avg-score','top-student','avg-clues','avg-time','popular-genre'].forEach(i=>el(i).textContent='—');el('total-cases').textContent=0;el('score-dist').innerHTML='<div style="color:var(--nm);font-size:12px;">No data yet.</div>';el('diff-breakdown').innerHTML='';el('genre-breakdown').innerHTML='';el('time-breakdown').innerHTML='';el('points-leaderboard').innerHTML='<div style="color:var(--nm);font-size:12px;">No data yet.</div>';return;}
+  // ── points leaderboard ──
+  const ptsByStudent={};
+  r.forEach(x=>{ptsByStudent[x.name]=(ptsByStudent[x.name]||0)+(x.points||0);});
+  const board=Object.entries(ptsByStudent).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  el('points-leaderboard').innerHTML=board.map(([name,pts],i)=>{
+    const rk=rankFor(pts);
+    return`<div class="trow"><span style="font-family:'Special Elite',monospace;font-size:11px;color:var(--nm);width:18px;">#${i+1}</span><span style="flex:1;font-size:13px;">${name} <span style="font-size:11px;">${rk.icon}</span></span><span style="font-family:'Special Elite',monospace;font-size:11px;color:var(--ng);">${pts} pts</span></div>`;
+  }).join('')||'<div style="color:var(--nm);font-size:12px;">No points recorded yet.</div>';
   el('avg-score').textContent=Math.round(r.reduce((a,x)=>a+x.pct,0)/r.length)+'%';
   el('total-cases').textContent=r.length;
   el('top-student').textContent=r.reduce((a,x)=>x.pct>a.pct?x:a,r[0]).name.split(' ')[0];
