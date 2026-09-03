@@ -120,6 +120,8 @@ select option{background:var(--ns);}
   white-space:nowrap;z-index:10;font-family:'Special Elite',monospace;letter-spacing:1px;
   max-width:220px;white-space:normal;}
 .clue:hover .clue-tip,.clue.tapped .clue-tip{display:block;}
+.clue-tip-close{display:inline-block;margin-left:8px;cursor:pointer;color:var(--nm);font-weight:bold;}
+.clue-tip-close:hover{color:var(--nrb);}
 
 .q-item{margin-bottom:16px;}
 .q-text{font-size:14px;margin-bottom:10px;line-height:1.7;}
@@ -130,7 +132,11 @@ select option{background:var(--ns);}
 .q-opt:hover{border-color:var(--ng);color:var(--ncr);}
 .q-opt.correct{border-color:#4a9;background:rgba(68,170,119,.15);color:#7dcea0;}
 .q-opt.wrong{border-color:var(--nrb);background:rgba(170,68,68,.15);color:#e07070;}
+.q-opt.selected{border-color:var(--ng);background:rgba(201,168,76,.15);color:var(--ncr);}
 .q-opt:disabled{cursor:default;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn:disabled:hover{background:transparent;color:var(--ng);}
+.btn-p:disabled:hover{background:var(--ng);color:var(--nb);}
 
 .score-ring{width:100px;height:100px;border-radius:50%;border:3px solid var(--ng);
   display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 18px;}
@@ -313,8 +319,9 @@ select option{background:var(--ns);}
   </div>
   <div class="tbar-w"><div class="tbar" id="timer-bar" style="width:100%"></div></div>
   <div class="card">
-    <div style="font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-bottom:10px;">
-      Context clues are <span style="background:rgba(201,168,76,.2);border-bottom:1px solid var(--ng);padding:0 3px;">highlighted</span> — tap to reveal meaning
+    <div id="clue-banner" style="display:flex;justify-content:space-between;align-items:center;font-family:'Special Elite',monospace;font-size:9px;letter-spacing:2px;color:var(--nm);margin-bottom:10px;cursor:pointer;" onclick="toggleClueBanner()">
+      <span id="clue-banner-text">Context clues are <span style="background:rgba(201,168,76,.2);border-bottom:1px solid var(--ng);padding:0 3px;">highlighted</span> — tap to reveal meaning</span>
+      <span id="clue-banner-toggle" style="color:var(--ng);flex-shrink:0;margin-left:8px;">[ – ]</span>
     </div>
     <div class="story-scroll"><div class="story-text" id="story-body"></div></div>
   </div>
@@ -469,7 +476,7 @@ const RENDER_API_URL = 'https://mystery-reader-api.onrender.com/api/claude';
 // ── STATE ──────────────────────────────────────────────────────────────────
 const st = {
   name:'', difficulty:'medium', genre:'school',
-  story:'', title:'', questions:[], answers:{},
+  story:'', title:'', questions:[], answers:{}, selected:{},
   currentQ:0, timerInt:null, timeLeft:1200,
   cluesHovered:new Set(), solution:'',
   lastResult:null, db:null, fbConnected:false, allResults:[]
@@ -631,7 +638,7 @@ STEP 2 — WRITE THE STORY:
 Generate a mystery story ${GENRE[st.genre]}. ${DIFF[st.difficulty]}
 
 Story requirements:
-- Length: 1400-1650 words
+- Length: 1650-1950 words
 - The story must be INTERNALLY CONSISTENT — every fact stated must remain true throughout. Never contradict a detail you already established (e.g. if a door was locked, it stays locked; if a character left at noon, they were not there at noon)
 - Introduce the culprit as a named character in the first third of the story
 - Plant exactly 3 physical clues that a careful reader can use to identify the culprit
@@ -673,7 +680,7 @@ function showReading(){
   const html=st.story.replace(/\[CLUE:([^:]+):([^\]]+)\]/g,(_,w,m)=>{
     n++;
     return`<span class="clue" onclick="tapClue(this,'${w.replace(/'/g,"\\'")}')">
-      ${w}<span class="clue-tip">Context clue: ${m}</span></span>`;
+      ${w}<span class="clue-tip">Context clue: ${m}<span class="clue-tip-close" onclick="event.stopPropagation();this.closest('.clue').classList.remove('tapped');">✕</span></span></span>`;
   });
   document.getElementById('story-body').innerHTML=html;
   document.getElementById('clue-count').textContent='0/'+n;
@@ -681,6 +688,14 @@ function showReading(){
   clearInterval(st.timerInt);
   st.timerInt=setInterval(tick,1000);
   show('s-reading');
+}
+
+function toggleClueBanner(){
+  const txt=document.getElementById('clue-banner-text');
+  const tog=document.getElementById('clue-banner-toggle');
+  const collapsed=txt.style.display==='none';
+  txt.style.display=collapsed?'':'none';
+  tog.textContent=collapsed?'[ – ]':'[ + ]';
 }
 
 function tapClue(el,w){
@@ -700,14 +715,16 @@ function tick(){
 }
 
 // ── QUIZ ───────────────────────────────────────────────────────────────────
-function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};buildDots();renderQ();updateLivePoints();show('s-quiz');}
+function goToQuiz(){clearInterval(st.timerInt);st.currentQ=0;st.answers={};st.selected={};buildDots();renderQ();updateLivePoints();show('s-quiz');}
 
 function buildDots(){
   document.getElementById('pdots').innerHTML=st.questions.map((_,i)=>`<div class="dot" id="dot-${i}"></div>`).join('');
 }
 
 function renderQ(){
-  const q=st.questions[st.currentQ],ans=st.answers[st.currentQ];
+  const q=st.questions[st.currentQ];
+  const confirmed=st.answers[st.currentQ];
+  const picked=st.selected[st.currentQ];
   const types={vocabulary:'vocab',comprehension:'comprehension',inference:'inference',solution:'solution'};
   let html=`<div class="q-item">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -715,11 +732,27 @@ function renderQ(){
       <span style="font-family:'Special Elite',monospace;font-size:10px;color:var(--nm);letter-spacing:1px;">Q${st.currentQ+1} of ${st.questions.length}</span>
     </div>
     <div class="q-text">${q.q}</div>`;
-  q.options.forEach((o,i)=>{
-    let c='q-opt';
-    if(ans!==undefined){if(i===q.answer)c+=' correct';else if(i===ans&&i!==q.answer)c+=' wrong';}
-    html+=`<button class="${c}" onclick="selAns(${i})" ${ans!==undefined?'disabled':''}>${o}</button>`;
-  });
+  if(confirmed!==undefined){
+    // locked-in / graded view
+    q.options.forEach((o,i)=>{
+      let c='q-opt';
+      if(i===q.answer)c+=' correct';else if(i===confirmed&&i!==q.answer)c+=' wrong';
+      html+=`<button class="${c}" disabled>${o}</button>`;
+    });
+    html+=`<div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-sm" onclick="changeAnswer()">✎ Change This Answer</button>
+    </div>`;
+  } else {
+    // select-then-submit view
+    q.options.forEach((o,i)=>{
+      let c='q-opt';
+      if(i===picked)c+=' selected';
+      html+=`<button class="${c}" onclick="selOption(${i})">${o}</button>`;
+    });
+    html+=`<div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-sm btn-p" onclick="confirmAnswer()" ${picked===undefined?'disabled':''}>Submit Answer</button>
+    </div>`;
+  }
   html+='</div>';
   document.getElementById('quiz-area').innerHTML=html;
   const last=st.currentQ===st.questions.length-1;
@@ -731,7 +764,25 @@ function renderQ(){
   });
 }
 
-function selAns(i){if(st.answers[st.currentQ]!==undefined)return;st.answers[st.currentQ]=i;renderQ();updateLivePoints();}
+function selOption(i){
+  st.selected[st.currentQ]=i;
+  renderQ();
+}
+
+function confirmAnswer(){
+  const i=st.selected[st.currentQ];
+  if(i===undefined)return;
+  st.answers[st.currentQ]=i;
+  renderQ();
+  updateLivePoints();
+}
+
+function changeAnswer(){
+  delete st.answers[st.currentQ];
+  // st.selected already holds the previous pick so it stays highlighted
+  renderQ();
+  updateLivePoints();
+}
 
 function updateLivePoints(){
   const el=document.getElementById('live-points');
@@ -781,9 +832,10 @@ function submitQuiz(){
 
   document.getElementById('points-total').textContent=casePoints;
   const bdParts=[];
+  bdParts.push(`<div>⏱ Total time read: <span style="color:var(--ng)">${timeReadStr}</span></div>`);
   if(cluePts) bdParts.push(`<div>🔍 Clues found: ${st.cluesHovered.size} × ${PTS.clue} = <span style="color:var(--ng)">${cluePts} pts</span></div>`);
   if(answerPts) bdParts.push(`<div>✓ Correct answers: <span style="color:var(--ng)">${answerPts} pts</span></div>`);
-  if(timeBonus) bdParts.push(`<div>⏱ Speed bonus: <span style="color:var(--ng)">${timeBonus} pts</span></div>`);
+  if(timeBonus) bdParts.push(`<div>⚡ Speed bonus (for time read): <span style="color:var(--ng)">${timeBonus} pts</span></div>`);
   if(perfectBonus) bdParts.push(`<div>🏆 Perfect score bonus: <span style="color:var(--ng)">${perfectBonus} pts</span></div>`);
   document.getElementById('points-breakdown').innerHTML=bdParts.join('')||'<div style="color:var(--nm)">No points earned this round.</div>';
   document.getElementById('rank-box').style.display='none';
